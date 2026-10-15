@@ -12,19 +12,22 @@ function lanIp() {
   return 'localhost'
 }
 
+// Xodimlar saytining Vercel'dagi manzili (VITE_USER_APP_URL berilmasa shu ishlatiladi)
+const DEFAULT_USER_APP_URL = 'https://fritto-user.vercel.app'
+
 // QR kiosk ekrani — 5175 portda ishlaydi.
 // VITE_USER_APP_URL=auto — faqat kompyuterda (npm run dev): QR havolasi kompyuterning IP manziliga yo'naltiriladi.
-// Vercel'da (npm run build) VITE_USER_APP_URL ga xodimlar saytining haqiqiy manzili yozilishi SHART.
+// Vercel'da (npm run build) VITE_USER_APP_URL — xodimlar saytining manzili (berilmasa DEFAULT_USER_APP_URL).
 export default defineConfig(({ command, mode }) => {
   const env = { ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env }
   const userAppUrl = env.VITE_USER_APP_URL
 
-  if (command === 'build' && (!userAppUrl || userAppUrl === 'auto' || !/^https:\/\//.test(userAppUrl))) {
-    throw new Error(
-      '\n\nVITE_USER_APP_URL sozlanmagan.\n' +
-      "Vercel → Project → Settings → Environment Variables bo'limiga xodimlar saytining manzilini yozing,\n" +
-      'masalan: VITE_USER_APP_URL=https://fritto-user.vercel.app\n'
-    )
+  // Vercel'da VITE_USER_APP_URL berilmasa — xodimlar saytining asosiy manzili ishlatiladi
+  if (command === 'build' && (!userAppUrl || userAppUrl === 'auto')) {
+    process.env.VITE_USER_APP_URL = DEFAULT_USER_APP_URL
+    console.warn(`\n  VITE_USER_APP_URL berilmagan — ${DEFAULT_USER_APP_URL} ishlatiladi\n`)
+  } else if (command === 'build' && !/^https:\/\//.test(userAppUrl)) {
+    throw new Error(`\n\nVITE_USER_APP_URL noto'g'ri: "${userAppUrl}". U https:// bilan boshlanishi kerak.\n`)
   }
 
   return {
